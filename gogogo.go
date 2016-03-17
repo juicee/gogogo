@@ -39,4 +39,10 @@ func main() {
   fmt.Println(f, ToBe, ToBe);
   fmt.Println(f, MaxInt, MaxInt);
   fmt.Println(f, z, z);
+
+  v := 42.1 // change me!
+  fmt.Printf("v is of type %T\n", v)
+  //v = 42.1 // change me
+  fmt.Printf("v is of type %T\n", v)
+
 }

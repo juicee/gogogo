@@ -8,6 +8,10 @@ import "code.google.com/p/go-tour/wc"
 import "code.google.com/p/go-tour/reader"
 import "strings"
 import "io"
+import "os"
+import "net/http"
+import "image"
+
 
 // type Vertex struct {
 //   X, Y int
@@ -121,10 +125,81 @@ func Sqrt(x float64) (float64, error) {
   return -2, ErrNegativeSqrt(-2)
 }
 
+type MyReader struct {}
+
+func (reader MyReader) Read(buf []byte) (int, error) {
+  buf[0] = 'A'
+  return 1, nil
+}
+
+type rot13Reader struct {
+  r io.Reader
+}
+
+func (rot13r rot13Reader) Read(dst []byte) (int, error) {
+  n, err := rot13r.r.Read(dst)
+  if err != nil {
+    return n, err
+  }
+  for i := 0; i < n; i++ {
+    p := &dst[i]
+
+    if *p >= 'A' && *p <= 'Z' {
+      if (*p + 13) > 'Z' {
+        *p = 'A' + (13 - ('Z' - *p) - 1)
+      } else {
+        *p += 13
+      }
+    } else if(*p >= 'a' && *p <= 'z') {
+      if (*p + 13) > 'z' {
+        *p = 'a' + (13 - ('z' - *p) - 1)
+      } else {
+        *p += 13
+      }
+    } else {
+      continue;
+    }
+  }
+  return n, err
+}
+
+type Hello struct {}
+
+var requestSeq int
+func (h Hello) ServeHTTP (w http.ResponseWriter, r *http.Request) {
+  fmt.Fprint(w, "hello!")
+  requestSeq += 1
+  fmt.Println("request", requestSeq)
+}
+
+type String string
+type Struct struct {
+  Greeting string
+  Punct string
+  Who string
+}
+
+func (h String) ServeHTTP (w http.ResponseWriter, r *http.Request) {
+  fmt.Fprint(w, "hello string!")
+}
+
+func (s Struct) ServeHTTP (w http.ResponseWriter, r *http.Request)  {
+  fmt.Fprint(w, s.Greeting + s.Punct + s.Who)
+}
+
 func main() {
   // v := Vertex{3,4}
   // v.Scale(5)
   // fmt.Println(v.Abs())
+  img := image.NewRGBA(image.Rect(0, 0, 100, 100))
+  fmt.Println(img.Bounds())
+  fmt.Println(img.At(0, 0).RGBA())
+
+  reader.Validate(MyReader{})
+
+  s := strings.NewReader("   111")
+  r := rot13Reader{s}
+  io.Copy(os.Stdout, &r)
 
   flt := MyFloat(-3.14)
   fmt.Println(flt.Abs())
@@ -161,19 +236,31 @@ func main() {
   fmt.Println(errmsg.Error())
   fmt.Println(ErrNegativeSqrt(-3).Error())
 
-  r := strings.NewReader("Hello, Reader!")
 
-  b := make([]byte, 8)
 
-  for {
-    n, err := r.Read(b)
-    fmt.Printf("n = %v err = %v b = %v \n", n, err, b)
-    fmt.Printf("b[:n] = %q\n", b[:n])
+  http.Handle("/string", String("I'm a frayed knot."))
+  http.Handle("/struct", &Struct{"hello", "I am", "parkerzhu"})
+  http.Handle("/", &Hello{})
 
-    if err == io.EOF {
-      break
-    }
-  }
+  // err := http.ListenAndServe("localhost:4000", nil)
+  // if err != nil {
+  //   log.Fatal(err)
+  // }
+
+
+  // r := strings.NewReader("Hello, Reader!")
+  //
+  // b := make([]byte, 8)
+  //
+  // for {
+  //   n, err := r.Read(b)
+  //   fmt.Printf("n = %v err = %v b = %v \n", n, err, b)
+  //   fmt.Printf("b[:n] = %q\n", b[:n])
+  //
+  //   if err == io.EOF {
+  //     break
+  //   }
+  // }
 
   // f := fibonacci()
   // for i := 0; i < 10; i++ {
